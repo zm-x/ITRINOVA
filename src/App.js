@@ -1519,7 +1519,7 @@ const App = () => {
                             ? "https://um6p.ma/"
                             : logo === '/nasaspace.png'
                             ? "https://www.spaceappschallenge.org/"
-                            : "#"
+                            : "/"
                         }
                         target="_blank"
                         rel="noopener noreferrer"
