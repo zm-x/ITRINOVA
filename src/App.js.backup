@@ -1,0 +1,945 @@
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+  const [isBusiness, setIsBusiness] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [animationsPlayed, setAnimationsPlayed] = useState(false);
+  const [sectionVisible, setSectionVisible] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(false);
+  const [leoSectionAnimated, setLeoSectionAnimated] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    
+    // Set initial loaded state
+    setTimeout(() => {
+      setIsLoaded(true);
+      setAnimationsPlayed(true);
+    }, 100);
+  }, []);
+
+  // Set LEO section as animated once it becomes visible
+  useEffect(() => {
+    if (sectionVisible && scrollEnabled && !isSwitching && !leoSectionAnimated) {
+      setLeoSectionAnimated(true);
+    }
+  }, [sectionVisible, scrollEnabled, isSwitching, leoSectionAnimated]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
+    // Disable scroll completely
+    const disableScroll = (e) => {
+      e.preventDefault();
+      return false;
+    };
+    
+    // Disable all scroll methods
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.addEventListener('wheel', disableScroll, { passive: false });
+    document.addEventListener('touchmove', disableScroll, { passive: false });
+    document.addEventListener('keydown', (e) => {
+      if ([32, 33, 34, 35, 36, 37, 38, 39, 40].includes(e.keyCode)) {
+        e.preventDefault();
+      }
+    });
+    
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    
+    // Enable scroll after visible animations complete (buttons finish at 1800ms)
+    const scrollTimer = setTimeout(() => {
+      setScrollEnabled(true);
+      setAnimationsPlayed(true);
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+      document.removeEventListener('wheel', disableScroll);
+      document.removeEventListener('touchmove', disableScroll);
+    }, 1900); // Just after buttons animation completes
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(scrollTimer);
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+      document.removeEventListener('wheel', disableScroll);
+      document.removeEventListener('touchmove', disableScroll);
+    };
+  }, []);
+
+  // Scroll event listener for section animation
+  useEffect(() => {
+    if (!scrollEnabled) {
+      setSectionVisible(false); // Ensure it's false when scroll is disabled
+      return;
+    }
+
+    const handleScroll = () => {
+      const section = document.getElementById('leo-section');
+      if (section) {
+        const rect = section.getBoundingClientRect();
+        // Only trigger when section is actually scrolled into view (more strict)
+        const isVisible = rect.top < window.innerHeight * 0.8 && rect.bottom > 0;
+        setSectionVisible(isVisible);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // Don't check initial state - let it stay false until scrolled
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrollEnabled]);
+
+  const toggleMode = () => {
+    setIsSwitching(true);
+    
+    setTimeout(() => {
+      setIsBusiness(!isBusiness);
+    }, 350);
+    
+    setTimeout(() => {
+      setIsSwitching(false);
+    }, 1000);
+  };
+
+  const BusinessIcon = () => (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  );
+
+  const TalentIcon = () => (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+
+  return (
+    <div className={`min-h-screen transition-all duration-500 ${
+      isBusiness ? 'bg-white' : 'bg-black'
+    }`}>
+      <header className={`relative z-20 flex justify-between items-start px-8 py-6 lg:px-12 xl:px-16 transition-all duration-1000 ${
+        isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+      }`}>
+        <div className="flex items-start">
+          <img 
+            src="/logo.jpg" 
+            alt="ItriNova Logo" 
+            className="h-36 lg:h-42 w-auto rounded-lg shadow-md -mt-4"
+          />
+        </div>
+
+        <div className="flex items-center space-x-8 self-start mt-2">
+          <button
+            onClick={toggleMode}
+            className="p-3 rounded-full transition-all duration-300 relative group text-blue-400 hover:bg-gray-800 hover:text-blue-300"
+            aria-label={`Current: ${isBusiness ? 'Business' : 'Talent'} mode`}
+          >
+            <div className="relative">
+              <div className="transition-all duration-300 group-hover:opacity-0 group-hover:scale-95">
+                {isBusiness ? <BusinessIcon /> : <TalentIcon />}
+              </div>
+              <div className="absolute inset-0 transition-all duration-300 opacity-0 scale-105 group-hover:opacity-100 group-hover:scale-100">
+                {isBusiness ? <TalentIcon /> : <BusinessIcon />}
+              </div>
+            </div>
+            <div className={`absolute -bottom-12 left-1/2 transform -translate-x-1/2 px-3 py-1 text-xs rounded-md opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap border shadow-lg ${
+              isBusiness ? 'bg-white text-black border-gray-300' : 'bg-gray-800 text-white border-gray-700'
+            }`}>
+              Switch to {isBusiness ? 'Talent' : 'Business'}
+            </div>
+          </button>
+
+          <div className="flex items-center space-x-4 text-lg lg:text-xl text-white">
+            <button className="hover:underline transition-all duration-300 font-medium">
+              Sign In
+            </button>
+            <span className="text-gray-400">|</span>
+            <button className="hover:underline transition-all duration-300 font-medium">
+              Login
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative flex flex-col items-center justify-center min-h-[calc(100vh-160px)] px-6 pb-20">
+        <div className={`text-center mb-8 z-10 relative max-w-6xl mx-auto transition-all duration-1200 ${
+          isSwitching ? 'delay-0' : 'delay-300'
+        } ${
+          (animationsPlayed && !isSwitching) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
+          <h1 className={`text-3xl lg:text-4xl xl:text-5xl mb-6 font-medium tracking-wide transition-all duration-1000 ${
+            isSwitching ? 'delay-0' : 'delay-500'
+          } ${
+            (animationsPlayed && !isSwitching) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          } text-white`}>
+            welcome to
+          </h1>
+          <div className="text-center mb-8">
+            <h2 className={`text-7xl lg:text-8xl xl:text-9xl font-bold tracking-wider transition-all duration-1000 ${
+              isSwitching ? 'delay-0' : 'delay-700'
+            } ${
+              (animationsPlayed && !isSwitching) ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}>
+              <span className="text-gradient">ITRINOVA</span>
+            </h2>
+            <p className={`text-xl lg:text-2xl font-medium mt-6 transition-all duration-1000 ${
+              isSwitching ? 'delay-0' : 'delay-1000'
+            } ${
+              (animationsPlayed && !isSwitching) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            } text-white`}>
+              {isBusiness 
+                ? "Connecting Space Industry Leaders with Elite LEO Talent" 
+                : "Your Gateway to the Commercial Space Economy"
+              }
+            </p>
+          </div>
+        </div>
+
+        <div className={`text-center mb-16 z-10 relative max-w-4xl mx-auto transition-all ${
+          isSwitching ? 'duration-300 delay-0' : 'duration-1000 delay-1750'
+        } ${
+          (animationsPlayed && !isSwitching) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          {isBusiness ? (
+            <div>
+              <p className={`text-xl lg:text-2xl xl:text-3xl leading-relaxed mb-8 ${isBusiness ? 'text-white' : 'text-gray-300'}`}>
+                The premier talent acquisition platform for space industry leaders
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-8">
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">98%</div>
+                  <div className={`text-sm lg:text-base ${isBusiness ? 'text-white' : 'text-gray-400'}`}>Hiring Success Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">45 Days</div>
+                  <div className={`text-sm lg:text-base ${isBusiness ? 'text-white' : 'text-gray-400'}`}>Average Time to Hire</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">500+</div>
+                  <div className={`text-sm lg:text-base ${isBusiness ? 'text-white' : 'text-gray-400'}`}>Partner Companies</div>
+                </div>
+              </div>
+              <p className={`text-lg leading-relaxed ${isBusiness ? 'text-white' : 'text-gray-400'}`}>
+                Access pre vetted LEO professionals with verified credentials, security clearances, and NASA backed certifications. Our AI powered matching system reduces hiring time by 60% while ensuring regulatory compliance.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xl lg:text-2xl xl:text-3xl leading-relaxed text-gray-300 mb-8">
+                The exclusive professional network for the commercial Low Earth Orbit workforce
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-8">
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">15,000+</div>
+                  <div className="text-sm lg:text-base text-gray-400">Active Professionals</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">$180K</div>
+                  <div className="text-sm lg:text-base text-gray-400">Average Salary</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">95%</div>
+                  <div className="text-sm lg:text-base text-gray-400">Job Placement Rate</div>
+                </div>
+              </div>
+              <p className="text-lg text-gray-400 leading-relaxed">
+                Connect with top space companies, showcase your expertise, and advance your career in the rapidly growing Low Earth Orbit industry. Access exclusive opportunities and NASA backed training programs.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className={`flex flex-col lg:flex-row gap-6 mb-20 z-10 relative transition-all ${
+          isSwitching ? 'duration-300 delay-0' : 'duration-1000 delay-1800'
+        } ${
+          (animationsPlayed && !isSwitching) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
+          {isBusiness ? (
+            <>
+              <button className="px-12 py-4 text-lg lg:text-xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 font-semibold shadow-lg hover:shadow-xl">
+                Start Hiring
+              </button>
+              <button className="px-12 py-4 text-lg lg:text-xl border-2 rounded-lg transition-colors duration-300 font-semibold shadow-lg hover:shadow-xl border-white text-black hover:bg-white">
+                View Talent Pool
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="px-12 py-4 text-lg lg:text-xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 font-semibold shadow-lg hover:shadow-xl">
+                Join the Network
+              </button>
+              <button className="px-12 py-4 text-lg lg:text-xl border-2 rounded-lg transition-colors duration-300 font-semibold shadow-lg hover:shadow-xl border-white text-white hover:bg-white hover:text-black">
+                Browse Jobs
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+
+
+
+
+
+<div className={`absolute top-0 left-0 w-full h-full z-0 overflow-hidden transition-all duration-2000 ${
+        isSwitching ? 'delay-0' : 'delay-200'
+      } ${
+        (isLoaded && !isSwitching) ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+      }`}>
+        <img
+          src={isBusiness ? "/earth1.png" : "/earth.png"}
+          alt="Earth"
+          className="w-full h-full object-cover object-center sketch-filter transition-all duration-2000"
+          style={{
+            minWidth: '1920px',
+            filter: 'contrast(1.2) brightness(0.8) saturate(0.8) sepia(0.1)'
+          }}
+        />
+        {/* Seamless vertical blur gradient for business mode - perfect white background match */}
+        <div 
+          className={`absolute bottom-0 left-0 right-0 h-64 z-1 transition-opacity duration-1000 ${
+            isBusiness ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{
+            background: `linear-gradient(to bottom, 
+              transparent 0%, 
+              rgba(255, 255, 255, 0.02) 5%,
+              rgba(255, 255, 255, 0.08) 15%,
+              rgba(255, 255, 255, 0.18) 25%,
+              rgba(255, 255, 255, 0.35) 35%,
+              rgba(255, 255, 255, 0.55) 45%,
+              rgb(255, 255, 255) 70%,
+              rgb(255, 255, 255) 100%)`
+          }}
+        />
+      </div>
+      <section 
+        id="leo-section"
+        className={`relative z-20 py-20 px-8 lg:px-12 xl:px-16 transition-all duration-1000 ${
+          isBusiness ? 'bg-white -mt-32' : 'bg-black/80 backdrop-blur-xl -mt-8'
+        }`}>
+        <div className="max-w-7xl mx-auto">
+          {/* How It Works Content */}
+          <div className="text-center mb-16">
+            <h2 className={`text-4xl lg:text-5xl font-bold mb-6 ${
+              isBusiness ? 'text-gray-900' : 'text-white'
+            }`}>
+              How It Works
+            </h2>
+            <p className={`text-xl max-w-3xl mx-auto ${
+              isBusiness ? 'text-gray-600' : 'text-gray-300'
+            }`}>
+              {isBusiness 
+                ? 'Get started with ITRINOVA in five comprehensive steps to build your team and find your next space industry hire'
+                : 'Launch your space industry career with our streamlined onboarding process'
+              }
+            </p>
+          </div>
+
+          <div className="relative">
+            {/* Connection Line - Only show on talent page */}
+            {!isBusiness && (
+              <div className="absolute top-10 left-0 right-0 h-0.5 bg-gray-700 hidden lg:block" style={{left: '12.5%', right: '12.5%'}}></div>
+            )}
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-16">
+              {/* Step 1 */}
+              <div className="text-center relative">
+                <div className="relative mb-6">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto text-2xl font-bold relative z-10 ${
+                    isBusiness ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                  }`}>
+                    1
+                  </div>
+                </div>
+                <h3 className={`text-xl font-semibold mb-4 ${
+                  isBusiness ? 'text-gray-900' : 'text-white'
+                }`}>
+                  {isBusiness ? 'Registration' : 'Sign Up'}
+                </h3>
+                <p className={`text-sm ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-300'
+                }`}>
+                  {isBusiness 
+                    ? 'Set up your company profile and specify hiring requirements, security clearance needs, and space industry expertise criteria'
+                    : 'Create your professional profile and upload your credentials and certifications'
+                  }
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="text-center relative">
+                <div className="relative mb-6">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto text-2xl font-bold relative z-10 ${
+                    isBusiness ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                  }`}>
+                    2
+                  </div>
+                </div>
+                <h3 className={`text-xl font-semibold mb-4 ${
+                  isBusiness ? 'text-gray-900' : 'text-white'
+                }`}>
+                  {isBusiness ? 'AI Matching' : 'Get Matched'}
+                </h3>
+                <p className={`text-sm ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-300'
+                }`}>
+                  {isBusiness 
+                    ? 'Platform analyzes 200+ space industry variables including technical expertise, NASA certifications, and security clearances for ideal candidate selection'
+                    : 'Our intelligent system matches your skills and clearance level with relevant job opportunities'
+                  }
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="text-center relative">
+                <div className="relative mb-6">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto text-2xl font-bold relative z-10 ${
+                    isBusiness ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                  }`}>
+                    3
+                  </div>
+                </div>
+                <h3 className={`text-xl font-semibold mb-4 ${
+                  isBusiness ? 'text-gray-900' : 'text-white'
+                }`}>
+                  {isBusiness ? 'Talent Review' : 'Apply & Interview'}
+                </h3>
+                <p className={`text-sm ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-300'
+                }`}>
+                  {isBusiness 
+                    ? 'Access comprehensive, verified profiles featuring NASA certifications, security clearances, space industry experience, and technical competencies'
+                    : 'Apply to positions and participate in streamlined interview processes with space industry leaders'
+                  }
+                </p>
+              </div>
+
+              {/* Step 4 */}
+              <div className="text-center relative">
+                <div className="relative mb-6">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto text-2xl font-bold relative z-10 ${
+                    isBusiness ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                  }`}>
+                    4
+                  </div>
+                </div>
+                <h3 className={`text-xl font-semibold mb-4 ${
+                  isBusiness ? 'text-gray-900' : 'text-white'
+                }`}>
+                  {isBusiness ? 'Confident Hiring' : 'Start Your Career'}
+                </h3>
+                <p className={`text-sm ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-300'
+                }`}>
+                  {isBusiness 
+                    ? 'Interview and hire qualified candidates through our secure, ITAR-compliant platform designed specifically for space industry recruitment'
+                    : 'Connect with leading space companies and land your dream job in the LEO industry'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <div className="text-center mt-12 relative z-50">
+              <button className="px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 hover:scale-105 bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl relative z-50" style={{backgroundColor: '#2563eb !important', opacity: '1 !important'}}>
+                {isBusiness ? 'Start Hiring Today' : 'Join the Network'}
+              </button>
+            </div>
+          </div>
+
+          {/* Enterprise-Grade Platform Features Content */}
+          <div className="mt-20 mb-20">
+            <div className="text-center mb-16">
+              <h2 className={`text-4xl lg:text-5xl font-bold mb-6 ${
+                isBusiness ? 'text-black' : 'text-white'
+              }`}>
+                {isBusiness ? 'Enterprise-Grade Platform Features' : 'Professional Development Ecosystem'}
+              </h2>
+              <p className={`text-xl max-w-3xl mx-auto ${
+                isBusiness ? 'text-gray-600' : 'text-gray-300'
+              }`}>
+                {isBusiness 
+                  ? 'Advanced tools and compliance features designed for space industry recruitment leaders'
+                  : 'Comprehensive resources to accelerate your career in the commercial space economy'
+                }
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+              {/* NASA-Certified Training Section */}
+              <div className={`p-8 rounded-2xl ${
+                isBusiness ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-800 hover:bg-gray-750'
+              } transition-all duration-300`}>
+                <div className="flex items-center mb-6">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                    isBusiness ? 'bg-blue-600' : 'bg-blue-500'
+                  }`}>
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                  </div>
+                  <h3 className={`text-2xl font-bold ${
+                    isBusiness ? 'text-gray-900' : 'text-white'
+                  }`}>
+                    {isBusiness ? 'NASA-Certified Talent Pool' : 'NASA-Certified Training'}
+                  </h3>
+                </div>
+                <p className={`text-lg leading-relaxed mb-4 ${
+                  isBusiness ? 'text-gray-700' : 'text-gray-300'
+                }`}>
+                  {isBusiness
+                    ? 'Access pre-vetted professionals with verified NASA certifications, security clearances, and space industry experience. Every candidate undergoes rigorous technical assessment.'
+                    : 'Complete NASA-certified training modules designed for commercial space operations. Earn industry-recognized credentials that space employers actively seek.'
+                  }
+                </p>
+                <ul className={`space-y-2 ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-400'
+                }`}>
+                  {isBusiness ? (
+                    <>
+                      <li>• Security clearance verification</li>
+                      <li>• Technical skill assessment</li>
+                      <li>• Industry experience validation</li>
+                      <li>• Continuous performance tracking</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• Orbital mechanics fundamentals</li>
+                      <li>• Spacecraft systems operations</li>
+                      <li>• Mission planning and execution</li>
+                      <li>• Safety protocols and procedures</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              {/* AI-Powered Matching Section */}
+              <div className={`p-8 rounded-2xl ${
+                isBusiness ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-800 hover:bg-gray-750'
+              } transition-all duration-300`}>
+                <div className="flex items-center mb-6">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                    isBusiness ? 'bg-green-600' : 'bg-green-500'
+                  }`}>
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                    </svg>
+                  </div>
+                  <h3 className={`text-2xl font-bold ${
+                    isBusiness ? 'text-gray-900' : 'text-white'
+                  }`}>
+                    {isBusiness ? 'AI-Powered Matching' : 'Career Advancement'}
+                  </h3>
+                </div>
+                <p className={`text-lg leading-relaxed mb-4 ${
+                  isBusiness ? 'text-gray-700' : 'text-gray-300'
+                }`}>
+                  {isBusiness
+                    ? 'Advanced algorithms analyze 200+ variables including technical skills, security clearances, and project experience to deliver perfect candidate matches in minutes.'
+                    : 'AI-driven career recommendations match your skills with high-growth opportunities in satellite operations, space manufacturing, and orbital research.'
+                  }
+                </p>
+                <ul className={`space-y-2 ${
+                  isBusiness ? 'text-gray-600' : 'text-gray-400'
+                }`}>
+                  {isBusiness ? (
+                    <>
+                      <li>• 98% matching accuracy rate</li>
+                      <li>• Real-time candidate availability</li>
+                      <li>• Automated compliance screening</li>
+                      <li>• Predictive performance analytics</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• Personalized job recommendations</li>
+                      <li>• Skill gap analysis and training</li>
+                      <li>• Salary benchmarking tools</li>
+                      <li>• Career progression planning</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <h3 className={`text-4xl lg:text-5xl xl:text-6xl font-bold text-center mb-16 transition-all duration-1000 ${
+            isBusiness ? 'text-black' : 'text-white'
+          } ${
+            isSwitching ? 'delay-0' : 'delay-200'
+          } ${
+            (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+            {isBusiness ? 'Enterprise LEO Solutions' : 'Built for LEO Professionals'}
+          </h3>
+          <div className="grid lg:grid-cols-3 gap-10 lg:gap-12">
+            {isBusiness ? (
+              <>
+                <div className={`${isBusiness ? 'p-4 lg:p-6' : 'p-8 lg:p-10 rounded-xl bg-gray-800/70 backdrop-blur-sm shadow-xl hover:shadow-2xl'} transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-400'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className={`text-2xl lg:text-3xl font-semibold mb-4 ${isBusiness ? 'text-blue-600' : 'text-blue-400'}`}>
+                    AI-Powered Matching
+                  </h4>
+                  <p className={`text-lg lg:text-xl leading-relaxed ${isBusiness ? 'text-gray-800' : 'text-gray-300'}`}>
+                    Advanced algorithms analyze 200+ variables to match your requirements with pre-vetted LEO professionals. Reduce hiring time by 60% with intelligent candidate recommendations.
+                  </p>
+                </div>
+                <div className={`${isBusiness ? 'p-4 lg:p-6' : 'p-8 lg:p-10 rounded-xl bg-gray-800/70 backdrop-blur-sm shadow-xl hover:shadow-2xl'} transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-600'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className={`text-2xl lg:text-3xl font-semibold mb-4 ${isBusiness ? 'text-blue-600' : 'text-blue-400'}`}>
+                    Compliance & Security
+                  </h4>
+                  <p className={`text-lg lg:text-xl leading-relaxed ${isBusiness ? 'text-gray-800' : 'text-gray-300'}`}>
+                    Built-in ITAR compliance verification and security clearance validation. All candidates undergo rigorous background checks and credential verification processes.
+                  </p>
+                </div>
+                <div className={`${isBusiness ? 'p-4 lg:p-6' : 'p-8 lg:p-10 rounded-xl bg-gray-800/70 backdrop-blur-sm shadow-xl hover:shadow-2xl'} transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-800'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className={`text-2xl lg:text-3xl font-semibold mb-4 ${isBusiness ? 'text-blue-600' : 'text-blue-400'}`}>
+                    Market Intelligence
+                  </h4>
+                  <p className={`text-lg lg:text-xl leading-relaxed ${isBusiness ? 'text-gray-800' : 'text-gray-300'}`}>
+                    Real-time salary benchmarks, skill demand analytics, and competitive intelligence. Make data-driven hiring decisions with comprehensive LEO industry insights.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`p-4 lg:p-6 transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-400'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className="text-2xl lg:text-3xl font-semibold mb-4 text-blue-400">
+                    Verified Profiles
+                  </h4>
+                  <p className="text-lg lg:text-xl leading-relaxed text-white">
+                    Showcase your expertise with verified credentials, security clearances, and project portfolios. Connect with verified professionals in satellite operations, microgravity research, and orbital manufacturing.
+                  </p>
+                </div>
+                <div className={`p-4 lg:p-6 transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-600'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className="text-2xl lg:text-3xl font-semibold mb-4 text-blue-400">
+                    NASA Certifications
+                  </h4>
+                  <p className="text-lg lg:text-xl leading-relaxed text-white">
+                    Access exclusive NASA-backed training programs and certification courses. Advance your career with industry-recognized credentials in space systems, orbital mechanics, and LEO operations.
+                  </p>
+                </div>
+                <div className={`p-4 lg:p-6 transition-all duration-1000 ${
+                  isSwitching ? 'delay-0' : 'delay-800'
+                } ${
+                  (leoSectionAnimated || (sectionVisible && scrollEnabled && !isSwitching)) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <h4 className="text-2xl lg:text-3xl font-semibold mb-4 text-blue-400">
+                    Career Opportunities
+                  </h4>
+                  <p className="text-lg lg:text-xl leading-relaxed text-white">
+                    Access exclusive job opportunities with leading space companies. Find positions that match your security clearance level and regulatory compliance requirements in the growing LEO economy.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Our Partners Section */}
+      <section className={`relative z-10 py-16 ${isBusiness ? 'bg-white' : 'bg-black'}`}>
+        <div className="max-w-7xl mx-auto px-8 lg:px-12 xl:px-16">
+          <h3 className={`text-3xl lg:text-4xl xl:text-5xl font-bold text-center mb-12 ${isBusiness ? 'text-gray-800' : 'text-white'}`}>
+            Our Partners
+          </h3>
+          <p className={`text-lg lg:text-xl text-center mb-16 max-w-3xl mx-auto ${isBusiness ? 'text-gray-600' : 'text-gray-300'}`}>
+            Proudly supported by our hackathon and innovation partners
+          </p>
+        </div>
+          
+        {/* Logo Carousel Container - Full Width */}
+        <div className="relative overflow-hidden bg-white py-8 w-full">
+          <div className="flex scroll-animation whitespace-nowrap">
+              {/* Create multiple sets for seamless infinite loop */}
+              {Array.from({ length: 4 }, (_, setIndex) => (
+                <div key={`set-${setIndex}`} className="flex items-center flex-shrink-0">
+                  {['/1337.png', '/sole.png', '/nasaspace.png', '/1337.png', '/sole.png', '/nasaspace.png'].map((logo, i) => (
+                    <div key={`logo-${setIndex}-${i}`} className="flex-shrink-0 mx-8 lg:mx-12 xl:mx-16">
+                      <img
+                        src={logo}
+                        alt="Partner Logo"
+                        className={`w-auto opacity-60 hover:opacity-100 transition-opacity duration-300 filter grayscale hover:grayscale-0 ${
+                          logo === '/nasaspace.png' 
+                            ? 'h-16 lg:h-20 xl:h-24' 
+                            : logo === '/sole.png'
+                            ? 'h-28 lg:h-36 xl:h-44'
+                            : 'h-24 lg:h-32 xl:h-40'
+                        }`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+      </section>
+
+      {/* Footer Section */}
+      <footer className={`relative z-10 py-16 px-8 lg:px-12 xl:px-16 transition-all duration-1000 border-t-2 border-black ${
+        isSwitching 
+          ? 'bg-gray-500 text-gray-500'
+          : isBusiness 
+            ? 'bg-white text-black' 
+            : 'bg-black text-white'
+      }`}>
+        <div className="max-w-7xl mx-auto">
+          {/* Main Footer Content */}
+          <div className="grid lg:grid-cols-12 gap-12 mb-12">
+            {/* Company Info - Left Side */}
+            <div className="lg:col-span-5">
+              {/* Logo */}
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div className="bg-black p-2 rounded-lg mr-3">
+                    <img 
+                      src="/logo.jpg" 
+                      alt="ItriNova Logo" 
+                      className="h-16 w-auto rounded-lg"
+                    />
+                  </div>
+                  <span className={`text-2xl font-bold tracking-wide ${
+                    isBusiness ? 'text-black' : 'text-white'
+                  }`}>
+                    ITRINOVA
+                  </span>
+                </div>
+              </div>
+              
+              {/* Mission Statement */}
+              <p className={`text-lg leading-relaxed mb-6 ${
+                isBusiness ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Empowering LEO workforce development through NASA-backed training programs, AI-driven talent matchmaking, and secure, compliant industry connections. ITRINOVA bridges the gap between exceptional space professionals and pioneering commercial LEO enterprises, accelerating innovation in the new space economy.
+              </p>
+              
+              {/* Learn More CTA */}
+              <a 
+                href="#" 
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-300"
+              >
+                Learn More
+                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+            </div>
+            
+            {/* Navigation Links - Right Side */}
+            <div className="lg:col-span-7">
+              <div className="grid md:grid-cols-4 gap-8">
+                {/* Column 1 - Platform */}
+                <div>
+                  <h4 className={`text-lg font-semibold mb-4 ${
+                    isBusiness ? 'text-black' : 'text-white'
+                  }`}>Platform</h4>
+                  <ul className="space-y-3">
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Talent Network</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>NASA Courses</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Enterprise Solutions</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>AI Matching Engine</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>LEO Job Board</a></li>
+                  </ul>
+                </div>
+                
+                {/* Column 2 - Company */}
+                <div>
+                  <h4 className={`text-lg font-semibold mb-4 ${
+                    isBusiness ? 'text-black' : 'text-white'
+                  }`}>Company</h4>
+                  <ul className="space-y-3">
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>About Us</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Careers</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Contact</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Leadership Team</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Partners</a></li>
+                  </ul>
+                </div>
+                
+                {/* Column 3 - Compliance & Security */}
+                <div>
+                  <h4 className={`text-lg font-semibold mb-4 ${
+                    isBusiness ? 'text-black' : 'text-white'
+                  }`}>Compliance & Security</h4>
+                  <ul className="space-y-3">
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>ITAR Compliance</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Responsible AI</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Privacy Policy</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Security Center</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Data Protection</a></li>
+                  </ul>
+                </div>
+                
+                {/* Column 4 - Support & Resources */}
+                <div>
+                  <h4 className={`text-lg font-semibold mb-4 ${
+                    isBusiness ? 'text-black' : 'text-white'
+                  }`}>Support & Resources</h4>
+                  <ul className="space-y-3">
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>FAQs</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Blog</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Help Center</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>Documentation</a></li>
+                    <li><a href="#" className={`transition-colors duration-300 ${
+                      isBusiness 
+                        ? 'text-gray-600 hover:text-black' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}>API Guide</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom Section */}
+          <div className={`pt-8 ${
+            isBusiness ? '' : 'border-t border-gray-700'
+          }`}>
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              {/* Social Media Links */}
+              <div className="flex space-x-6 mb-4 md:mb-0">
+                <a href="#" className={`transition-colors duration-300 ${
+                  isBusiness 
+                    ? 'text-gray-500 hover:text-black' 
+                    : 'text-gray-400 hover:text-white'
+                }`} aria-label="LinkedIn">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </a>
+                <a href="#" className={`transition-colors duration-300 ${
+                  isBusiness 
+                    ? 'text-gray-500 hover:text-black' 
+                    : 'text-gray-400 hover:text-white'
+                }`} aria-label="Twitter/X">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
+                <a href="#" className={`transition-colors duration-300 ${
+                  isBusiness 
+                    ? 'text-gray-500 hover:text-black' 
+                    : 'text-gray-400 hover:text-white'
+                }`} aria-label="YouTube">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </a>
+              </div>
+              
+              {/* Copyright */}
+              <div className={`text-sm ${
+                isBusiness ? 'text-gray-500' : 'text-gray-400'
+              }`}>
+                © {new Date().getFullYear()} ITRINOVA. All rights reserved.
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  );
+};
+
+export default App;
